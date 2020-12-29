@@ -71,11 +71,16 @@ function load_mailbox(mailbox) {
       // ... do something else with emails ...
       document.querySelectorAll('#emails').forEach(email => { email.innerHTML=""});
 
-      emails.forEach(showEmail)
+      emails.forEach(showEmails)
     });
+
+  document.addEventListener
 }
 
-function showEmail(emailContent){
+
+/*
+//first option how to display all mails - more difficult to read but maybe faster?
+function showEmails(emailContent){
   const email = document.createElement('div');
   email.className = 'email';
   email.innerHTML = `<hr> <b>Sender: </b>${emailContent.sender}<br> <b>Subject: </b>${emailContent.subject} <br><b>Timestamp: </b>  ${emailContent.timestamp}`;
@@ -86,5 +91,41 @@ function showEmail(emailContent){
   }
   console.log(emailContent.read);
 
+  document.querySelector('#emails').append(email);
+}*/
+
+//second option how to display all mails - easier to read but maybe slower?
+function showEmails(emailContent){
+
+  // create all needed divs
+  const email = document.createElement('div');
+  const emailSender = document.createElement('div');
+  const emailSubject = document.createElement('div');
+  const emailTimestamp = document.createElement('div');
+
+  // assign a class to each div
+  email.className = "email";
+  emailSender.className = "emailSender";
+  emailSubject.className = "emailSubject";
+  emailTimestamp.className = "emailTimestamp";
+  
+  // assign the innerHTML to each div, based on queried data
+  emailSender.innerHTML = `<hr> <b>Sender: </b>${emailContent.sender}`;
+  emailSubject.innerHTML = `<b>Subject: </b>${emailContent.subject}`;
+  emailTimestamp.innerHTML = `<b>Timestamp: </b>  ${emailContent.timestamp}`;
+ 
+  // change background to white when Email has not been read and grey if it has been read
+  if (emailContent.read === false){
+    email.style.backgroundColor = "white";
+  }else{
+    email.style.backgroundColor = "gray";
+  }
+
+  // Append all child divs to the parent div email
+  email.appendChild(emailSender);
+  email.appendChild(emailSubject);
+  email.appendChild(emailTimestamp);
+
+  // append another email div to the document
   document.querySelector('#emails').append(email);
 }
