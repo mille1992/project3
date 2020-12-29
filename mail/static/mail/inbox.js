@@ -42,10 +42,7 @@ function compose_email() {
       })
     })
     .then(response => response.json())
-    .then(result => {
-        // Print result
-        console.log(result);
-    }); 
+
       
     // return sent mailbox of the current user
     load_mailbox('sent');
@@ -55,26 +52,26 @@ function compose_email() {
 
 function load_mailbox(mailbox) {
   
+  console.log('enter load_mailbox')
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
+  // delete the all emails from view - better than just hiding via display = none due to browser memory?
+  document.querySelectorAll('#emails').forEach(email => {email.innerHTML=""});
+  // hide all emailDetails from view
+  document.querySelector('#emailDetails').style.display ="none";   
 
   // Show the mailbox name
   document.querySelector('#pageHeading').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
 
-  // create list item for each email
+  // create item for each email in db
   fetch(`emails/${mailbox}`)
   .then(response => response.json())
   .then(emails => {
-      // Print emails
-      console.log(emails);
-      // ... do something else with emails ...
-      document.querySelectorAll('#emails').forEach(email => { email.innerHTML=""});
-
-      emails.forEach(showEmails)
+      document.querySelectorAll('#emails').forEach(email => {email.style.display="block"});
+      emails.forEach(showEmails);
     });
-
-  document.addEventListener
+  
 }
 
 
@@ -94,25 +91,32 @@ function showEmails(emailContent){
   document.querySelector('#emails').append(email);
 }*/
 
+
+
+
 //second option how to display all mails - easier to read but maybe slower?
 function showEmails(emailContent){
 
+
   // create all needed divs
-  const email = document.createElement('div');
-  const emailSender = document.createElement('div');
-  const emailSubject = document.createElement('div');
-  const emailTimestamp = document.createElement('div');
+  let email = document.createElement('div');
+  let emailSender = document.createElement('div');
+  let emailSubject = document.createElement('div');
+  let emailTimestamp = document.createElement('div');
 
   // assign a class to each div
-  email.className = "email";
-  emailSender.className = "emailSender";
-  emailSubject.className = "emailSubject";
-  emailTimestamp.className = "emailTimestamp";
+  email.className = "emailsContainer";
+  emailSender.className = "emailsSender";
+  emailSubject.className = "emailsSubject";
+  emailTimestamp.className = "emailsTimestamp";
   
   // assign the innerHTML to each div, based on queried data
   emailSender.innerHTML = `<hr> <b>Sender: </b>${emailContent.sender}`;
   emailSubject.innerHTML = `<b>Subject: </b>${emailContent.subject}`;
   emailTimestamp.innerHTML = `<b>Timestamp: </b>  ${emailContent.timestamp}`;
+
+  email.dataset.emailId = emailContent.id;
+
  
   // change background to white when Email has not been read and grey if it has been read
   if (emailContent.read === false){
@@ -126,6 +130,92 @@ function showEmails(emailContent){
   email.appendChild(emailSubject);
   email.appendChild(emailTimestamp);
 
+  // when email is clicked, show details of this mail
+  email.addEventListener('click', ()  =>{
+    show_Email_Details(emailContent.id);
+  })
+
   // append another email div to the document
   document.querySelector('#emails').append(email);
+}
+
+
+function show_Email_Details(emailId){
+  // delete the all emails from view - better than just hiding via display = none due to browser memory?
+  document.querySelectorAll('#emails').forEach(email => {email.innerHTML=""});
+  document.querySelector('#emailDetailsContent').innerHTML = "";
+  document.querySelector('#emailDetails').style.display ="block";
+
+  
+  fetch(`emails/${emailId} `)
+  .then(response => response.json())
+  .then(email => {
+
+      if (document.querySelector('#pageHeading').innerHTML.includes("Sent")){
+        document.querySelector('#archiveButton').style.display = "none";
+      }else{
+        document.querySelector('#archiveButton').style.display = "block";
+        document.querySelector('#archiveButton').onclick = () => {
+          archiveUnarchive(emailId);
+        };
+      }
+      
+      // create all needed divs
+      let emailContainer = document.createElement('div');
+      let emailSender = document.createElement('div');
+      let emailRecipients = document.createElement('div');
+      let emailSubject = document.createElement('div');
+      let emailTimestamp = document.createElement('div');
+      let emailBody = document.createElement('div');
+
+      // define email content class
+      emailContainer.className = "emailDetailsContent"
+      emailSender.className = "emailDetailsContent"
+      emailRecipients.className = "emailDetailsContent"
+      emailSubject.className = "emailDetailsContent"
+      emailBody.className = "emailDetailsContent"
+      emailBody.className = "emailDetailsContent"
+
+      // display content of each div from database
+      emailSender.innerHTML = `<hr> <b>Sender: </b>${email.sender}`;
+      emailRecipients.innerHTML = `<b>Recipients: </b>${email.recipients}`;
+      emailTimestamp.innerHTML = `<b>Timestamp: </b>${email.timestamp}`;
+      emailSubject.innerHTML = `<hr> <b>Subject: </b>${email.subject}`;
+      emailBody.innerHTML = `<br> <b>Content: </b>${email.body}`;
+
+      emailContainer.appendChild(emailSender);
+      emailContainer.appendChild(emailRecipients);
+      emailContainer.appendChild(emailTimestamp);
+      emailContainer.appendChild(emailSubject);
+      emailContainer.appendChild(emailBody);
+
+      document.querySelector('#emailDetailsContent').append(emailContainer);
+  });
+
+  fetch(`emails/${emailId} `,{
+    method: 'PUT',
+    body: JSON.stringify({
+        read: true
+    })
+  });
+}
+
+function archiveUnarchive(emailId){
+  console.log("enter archiveUnarchive function")
+  // get the current archive state of the email
+  fetch(`emails/${emailId} `)
+  .then(response => response.json())
+  .then(email =>{
+    let archivedState = email.archived;
+    // togle the archivedState
+    archivedState = !archivedState;
+    // modify the archivestate in the db
+    fetch(`emails/${emailId}`,{
+      method: 'PUT',
+      body: JSON.stringify({
+        archived: archivedState
+      })
+    })
+    .then(() => load_mailbox('inbox'));
+  })
 }
