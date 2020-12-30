@@ -52,7 +52,6 @@ function compose_email() {
 
 function load_mailbox(mailbox) {
   
-  console.log('enter load_mailbox')
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
@@ -96,8 +95,6 @@ function showEmails(emailContent){
 
 //second option how to display all mails - easier to read but maybe slower?
 function showEmails(emailContent){
-
-
   // create all needed divs
   let email = document.createElement('div');
   let emailSender = document.createElement('div');
@@ -116,7 +113,6 @@ function showEmails(emailContent){
   emailTimestamp.innerHTML = `<b>Timestamp: </b>  ${emailContent.timestamp}`;
 
   email.dataset.emailId = emailContent.id;
-
  
   // change background to white when Email has not been read and grey if it has been read
   if (emailContent.read === false){
@@ -140,23 +136,38 @@ function showEmails(emailContent){
 }
 
 
+
 function show_Email_Details(emailId){
+
   // delete the all emails from view - better than just hiding via display = none due to browser memory?
   document.querySelectorAll('#emails').forEach(email => {email.innerHTML=""});
   document.querySelector('#emailDetailsContent').innerHTML = "";
   document.querySelector('#emailDetails').style.display ="block";
 
-  
   fetch(`emails/${emailId} `)
   .then(response => response.json())
   .then(email => {
 
+      // only display archive button when not in sent mailbox
       if (document.querySelector('#pageHeading').innerHTML.includes("Sent")){
         document.querySelector('#archiveButton').style.display = "none";
       }else{
+        // display archive button and click event listener
         document.querySelector('#archiveButton').style.display = "block";
         document.querySelector('#archiveButton').onclick = () => {
           archiveUnarchive(emailId);
+        };
+        // display reply button and click event listener
+        document.querySelector('#replyButton').style.display = "block";
+        document.querySelector('#replyButton').onclick = () => {
+          compose_email()
+          document.querySelector('#compose-recipients').value = email.sender;
+          if (email.subject.includes("Re: ")){
+            document.querySelector('#compose-subject').value = email.subject;
+          }else{            
+            document.querySelector('#compose-subject').value = `Re: ${email.subject}`;
+          }
+          document.querySelector('#compose-body').value = `On ${email.timestamp}, ${email.sender} wrote:\n\n${email.body}`;
         };
       }
       
@@ -200,8 +211,9 @@ function show_Email_Details(emailId){
   });
 }
 
+
+
 function archiveUnarchive(emailId){
-  console.log("enter archiveUnarchive function")
   // get the current archive state of the email
   fetch(`emails/${emailId} `)
   .then(response => response.json())
